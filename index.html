@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>InfraBot - GenAI Assistant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+  :root {
+    --primary-color: #00bfffab;
+    --bg-color: transparent;      /* was #ffffff96 */
+    --sidebar-bg: #00000040;      /* subtle dark glass */
+    --chat-bg: #00000020;         /* very light overlay */
+    --user-bg: #dcf8c6;
+    --bot-bg: #ffffff96;
+    --text-color: #000;
+    --font-family: "Segoe UI", Roboto, sans-serif;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-family);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+
+    background-color: #021326;           /* fast solid fallback */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+
+    /* background image */
+    background-image: url("https://futransolutions.com/wp-content/uploads/2024/02/How-to-leverage-AWS-cloud-services-for-your-business-needs.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  .sidebar-header {
+    width: calc(100% - 24px);
+    margin: 6px 6px 12px 6px;
+    background: var(--primary-color);
+    color: rgb(255, 255, 255);
+    padding: 12px 14px;
+    font-weight: bold;
+    text-align: center;
+    position: relative;
+    z-index: 11;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 18px rgba(2,6,23,0.18);
+    border: 1px solid rgba(255,255,255,0.06);
+    backdrop-filter: blur(6px) saturate(120%);
+    width: calc(100% - 24px);
+    box-sizing: border-box;
+  }
+
+  .tab-container {
+    flex-shrink: 0;
+    width: 200px;
+    background: var(--sidebar-bg);          /* semi‑transparent */
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
+    padding-bottom: 50px;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.25);
+  }
+
+  .new-session-btn,
+  .fetch-session-btn {
+    width: calc(100% - 24px);
+    margin: 10px 6px;
+    padding: 12px 14px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    color: rgba(255,255,255,0.95);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 14px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 6px 18px rgba(2,6,23,0.25);
+    backdrop-filter: blur(6px) saturate(120%);
+    font-weight: 600;
+  }
+  .new-session-btn:hover,
+  .fetch-session-btn:hover {
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+    transform: translateY(-1px);
+  }
+  /* keep sidebar glassy if you like, but tabs are white */
+  .tab-container {
+    flex-shrink: 0;
+    width: 260px;
+    background: var(--sidebar-bg);  /* can stay semi‑dark */
+    border-right: 1px solid rgba(255,255,255,0.06);
+    overflow-y: auto;
+    padding: 14px 12px 50px 12px;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.25);
+  }
+
+.session-tab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px;
+  margin: 8px 6px;
+  width: calc(100% - 24px);
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 160ms ease, transform 120ms ease;
+  box-shadow: 0 6px 18px rgba(2,6,23,0.18);
+  backdrop-filter: blur(6px) saturate(120%);
+}
+
+.session-tab:hover { background: rgba(255,255,255,0.06); transform: translateY(-1px); }
+.session-tab.active { background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03)); font-weight: 600; }
+
+.session-content { display:flex; flex-direction:column; gap:2px; align-items:flex-start; overflow:hidden; flex: 1 1 auto; }
+.session-title { font-size: 14px; color: #fff; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; }
+.session-subtitle { font-size: 12px; color: rgba(255,255,255,0.75); white-space:nowrap; text-overflow:ellipsis; overflow:hidden; max-width: 100%; }
+
+.trash-btn {
+  border: none;
+  background: rgba(0,0,0,0.25);
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+}
+.trash-btn:hover { background: rgba(255,255,255,0.06); }
+
+  /* YAML popup / copy button */
+  .yaml-popup { position: relative; padding-top: 8px; }
+  .yaml-popup pre { max-height: 60vh; overflow: auto; background: #f4f4f4; padding: 14px; border-radius: 10px; }
+  .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    background: rgba(0,0,0,0.35);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(2,6,23,0.18);
+    font-size: 14px;
+  }
+  .copy-btn:hover { background: rgba(255,255,255,0.06); }
+
+  .chat-container {
+    flex: 1;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--chat-bg);             /* light transparent overlay */
+    position: relative;
+    padding: 0 90px;
+  }
+
+  .chat-messages {
+    flex: 1;
+    padding: 1rem 0;
+    overflow-y: auto;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .message {
+    padding: 12px 16px;
+    border-radius: 16px;
+    max-width: 80%;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+  }
+  .user { align-self: flex-end; background: var(--user-bg); }
+  .bot  { align-self: flex-start; background: rgba(255,255,255,0.85); }
+
+  .loading { font-style: italic; opacity: 0.6; }
+  .code-block { background: #eee; padding: 10px; border-radius: 8px; font-family: monospace; overflow-x: auto; }
+
+  /* ---------- INPUT WRAPPER ---------- */
+  .chat-input {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 0 20px 0;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    background: transparent;
+  }
+
+  .input-row {
+    width: 80%;
+    max-width: 1000px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    background: rgba(255,255,255,0.9);   /* glass panel over image */
+    border-radius: 12px;
+    border: 1px solid #ccc;
+    padding: 8px 8px 8px 12px;
+  }
+
+  .input-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .input-box {
+    width: 100%;
+    min-height: 40px;
+    margin: 0;
+    box-sizing: border-box;
+  }
+
+  .input-box textarea {
+    width: 100%;
+    min-height: 40px;
+    max-height: 96px;
+    border-radius: 8px;
+    border: none;
+    padding: 8px 4px 8px 0;
+    font-size: 1rem;
+    resize: none;
+    overflow-y: auto;
+    line-height: 1.2em;
+    box-sizing: border-box;
+    background: transparent;
+    color: inherit;
+    outline: none;
+  }
+
+  .extra-container {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border-radius: 6px;
+    background: transparent;
+    display: none;
+    box-sizing: border-box;
+    font-size: 13px;
+    color: #555;
+  }
+  .extra-container.active { display: block; }
+  #extraInfo {
+    font-size: 0;
+    line-height: 0;
+    height: 0;
+    overflow: hidden;
+  }
+
+  .input-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-end;
+    box-sizing: border-box;
+    flex-shrink: 0;
+  }
+
+  .button-stack {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .circle-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  }
+
+  .send-btn {
+    background: var(--primary-color);
+    color: #ffffff;
+  }
+
+  .upload-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
+    background: #ffffff;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+  }
+
+  .popup-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  .popup {
+    background: white;
+    padding: 20px 30px;
+    border-radius: 10px;
+    text-align: left;
+    font-size: 16px;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  /* Fetch modal specific tweaks */
+  .fetch-popup { max-width: 720px; min-width: 440px; padding: 20px; border-radius: 12px; }
+  .fetch-popup .modal-header { display:flex; align-items:center; justify-content:space-between; }
+  .fetch-popup .modal-title { font-size:18px; font-weight:700; margin:0 0 8px 0; }
+  .fetch-popup .modal-desc { font-size:13px; color:#444; margin:6px 0 12px 0; }
+  .fetch-popup .modal-input { width:100%; padding:12px 14px; font-size:15px; border-radius:10px; border:1px solid #ced4da; box-sizing:border-box; background:#fff; color:#111; }
+  .fetch-popup .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:12px; }
+  .btn-cancel { background: transparent; color:#333; border:1px solid #d5d5d5; padding:8px 12px; border-radius:8px; cursor:pointer; }
+  .btn-fetch { background: var(--primary-color); color:#fff; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; }
+  .modal-close { background: transparent; border: none; font-size:18px; cursor:pointer; color:#666 }
+  /* ensure overlay is above other UI and dims background */
+  .popup-overlay { z-index: 2000; background: rgba(1,6,14,0.65); }
+  .popup input {
+    width: 100%;
+    padding: 0.6rem;
+    margin: 8px 0;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+  }
+  .popup pre {
+    background: #f4f4f4;
+    padding: 10px;
+    border-radius: 8px;
+    font-family: monospace;
+    overflow-x: auto;
+  }
+  .popup button {
+    margin: 8px 5px 0 0;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    background: var(--primary-color);
+    color: white;
+    cursor: pointer;
+  }
+  .popup button:hover { background: #0056b3; }
+
+  .spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(0,0,0,0.2);
+    border-top: 2px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 6px;
+  }
+  @keyframes spin { 100% { transform: rotate(360deg); } }
+  /* Hide native scrollbars but keep scrolling functional */
+  html, body, .chat-messages, .tab-container, .popup {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  /* WebKit browsers */
+  html::-webkit-scrollbar, body::-webkit-scrollbar, .chat-messages::-webkit-scrollbar, .tab-container::-webkit-scrollbar, .popup::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+  }
+</style>
+
+</head>
+<body>
+  <div class="tab-container" id="sessionTabs">
+    <div class="sidebar-header">🤖 InfraBot</div>
+    <button class="fetch-session-btn" onclick="promptFetchStack()">🔍 Fetch Stack by ID</button>
+    <button class="new-session-btn" onclick="createSession()">  + New Chat</button>
+  </div>
+
+  <div class="chat-container">
+    <div class="chat-messages" id="chat"></div>
+
+    <div class="chat-input">
+      <div class="input-row">
+        <div class="input-left">
+          <div class="input-box">
+            <textarea id="promptInput"
+                      placeholder="Describe your AWS resource prompt..."
+                      oninput="autoResize(this)"></textarea>
+          </div>
+          <div id="extraContainer" class="extra-container">
+            <div id="extraInfo"></div>
+          </div>
+        </div>
+        <div class="input-actions">
+          <div class="button-stack">
+            <button id="uploadBtn" class="circle-btn upload-btn">+</button>
+            <button id="sendBtn" class="circle-btn send-btn" onclick="sendPrompt()">↑</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const apiGatewayUrl = "https://86dh8j17eg.execute-api.eu-central-1.amazonaws.com/first";
+    const secondApiUrl = "https://twi46zz0nk.execute-api.eu-central-1.amazonaws.com/second";
+
+    let lastGeneratedYAML = "";
+    let lastStatefulId = "";
+    let lastRegion = "eu-central-1";
+    let lastEnvironment = "PPD";
+    let sessions = [];
+    let currentSessionIndex = -1;
+    let promptsPerSession = {};
+    const EXTRA_ACTIVATE_CHAR_THRESHOLD = 250;
+
+    function getNextStatefulId() {
+      let lastIdNum = parseInt(localStorage.getItem("lastStatefulNumber")) || 0;
+      lastIdNum += 1;
+      localStorage.setItem("lastStatefulNumber", lastIdNum);
+      return `GENAI-STACK-${lastIdNum}`;
+    }
+
+    function autoResize(textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = Math.min(textarea.scrollHeight, 96) + "px";
+
+      const extra = document.getElementById("extraContainer");
+      const text = textarea.value || "";
+      if (!extra) return;
+      if (text.length > EXTRA_ACTIVATE_CHAR_THRESHOLD) {
+        extra.classList.add("active");
+      } else {
+        extra.classList.remove("active");
+      }
+    }
+
+    function showPopupWithButtons(msg, buttons = []) {
+      const overlay = document.createElement("div");
+      overlay.className = "popup-overlay";
+      const popup = document.createElement("div");
+      popup.className = "popup";
+      if (typeof msg === "string") popup.innerHTML = `<p>${msg}</p>`;
+      else popup.appendChild(msg);
+      buttons.forEach(btn => {
+        const buttonEl = document.createElement("button");
+        buttonEl.textContent = btn.label;
+        buttonEl.onclick = () => {
+          overlay.remove();
+          if (btn.onClick) btn.onClick();
+        };
+        popup.appendChild(buttonEl);
+      });
+      overlay.appendChild(popup);
+      document.body.appendChild(overlay);
+    }
+
+    function addMessage(content, sender, isCode=false, save=true, extraElement=null) {
+      const chat = document.getElementById("chat");
+      const msg = document.createElement("div");
+      msg.className = `message ${sender}`;
+      msg.innerHTML = isCode ? `<div class="code-block">${content}</div>` : content;
+      if(extraElement) msg.appendChild(extraElement);
+      chat.appendChild(msg);
+      chat.scrollTop = chat.scrollHeight;
+      if(save && currentSessionIndex>-1){
+        sessions[currentSessionIndex].push({content,sender,isCode});
+        saveSessions();
+      }
+    }
+
+    function showTyping() {
+      const typing = document.createElement("div");
+      typing.id = "typing";
+      typing.className = "message bot loading";
+      typing.textContent = "InfraBot is thinking...";
+      document.getElementById("chat").appendChild(typing);
+    }
+        function removeTyping() {
+      const typing = document.getElementById("typing");
+      if(typing) typing.remove();
+    }
+
+    // ---------------------------------------------------------
+    // Extract deployment environment from user prompt
+    // ---------------------------------------------------------
+    function extractEnvironmentFromPrompt(prompt) {
+
+      if (!prompt) {
+        return "PPD";
+      }
+
+      const text = prompt.toLowerCase();
+
+      // Check PRE-PROD first because it contains "prod"
+      if (
+        /\bpre[\s-]?prod\b/.test(text) ||
+        /\bpreprod\b/.test(text) ||
+        /\bppd\b/.test(text) ||
+        /\bpre[\s-]?production\b/.test(text)
+      ) {
+        return "PPD";
+      }
+
+      if (
+        /\bprod\b/.test(text) ||
+        /\bproduction\b/.test(text)
+      ) {
+        return "PROD";
+      }
+
+      if (
+        /\bbat\b/.test(text) ||
+        /\bbusiness[\s-]?acceptance[\s-]?testing\b/.test(text)
+      ) {
+        return "BAT";
+      }
+
+      // Default environment
+      return "PPD";
+    }
+
+    
+    async function sendPrompt() {
+      const input = document.getElementById("promptInput");
+      const prompt = input.value.trim();
+      if (!prompt) {
+        showPopupWithButtons("Please enter a prompt!", [{label: "OK"}]);
+        return;
+      }
+      if (/AWSTemplateFormatVersion:/m.test(prompt)) {
+        lastGeneratedYAML = prompt;
+        addMessage("Here is the edited YAML:", "bot");
+        addMessage(prompt, "user", true);
+        input.value = "";
+        autoResize(input);
+        showPopupWithButtons("Do you want to deploy this edited YAML?", [
+          { label: "Deploy", onClick: () => { addMessage("🚀 Deploying the edited YAML...", "bot"); deployYAML(); } },
+          { label: "No", onClick: () => { lastGeneratedYAML = ""; addMessage("❌ YAML discarded.","bot"); } }
+        ]);
+        return;
+      }
+      addMessage(prompt, "user");
+      input.value = "";
+      autoResize(input);
+      showTyping();
+      try {
+        const res = await fetch(apiGatewayUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt })
+        });
+        let data;
+        try { data = await res.json(); } catch(e) { data = {}; }
+        removeTyping();
+                if (res.ok && data.yaml) {
+              lastGeneratedYAML = data.yaml;
+              lastStatefulId = data.stateful_id || getNextStatefulId();
+
+              // ---------------------------------------------------------
+              // Store region returned by JSON Conversion Lambda
+              // ---------------------------------------------------------
+              lastRegion = data.region || "eu-central-1";
+
+              // ---------------------------------------------------------
+              // Determine environment from USER PROMPT
+              // ---------------------------------------------------------
+              lastEnvironment = data.environment || "PPD";
+
+              console.log("🌍 Deployment region:", lastRegion);
+              console.log("🏢 Deployment environment:", lastEnvironment);
+              addMessage("Here’s the generated YAML:","bot");
+              addMessage(data.yaml,"bot",true, true, null);
+
+              const yamlContent = document.createElement("div");
+              yamlContent.className = 'yaml-popup';
+              const headerInfo = document.createElement('p');
+              headerInfo.innerHTML =
+                `🆔 Reserved Stateful ID: <b>${lastStatefulId}</b><br>` +
+                `🌍 Region: <b>${lastRegion}</b><br>` +
+                `🏢 Environment: <b>${lastEnvironment}</b><br>` +
+                `Deploy this YAML?`;
+
+              const pre = document.createElement("pre");
+              pre.textContent = data.yaml;
+
+              const copyBtn = document.createElement('button');
+              copyBtn.className = 'copy-btn';
+              copyBtn.title = 'Copy YAML';
+              copyBtn.innerText = '📋';
+              copyBtn.onclick = function(e){
+                e.stopPropagation();
+                navigator.clipboard && navigator.clipboard.writeText(data.yaml).then(()=>{
+                  copyBtn.innerText = '✓';
+                  setTimeout(()=> copyBtn.innerText = '📋', 1200);
+                }).catch(()=>{ alert('Copy failed'); });
+              };
+
+              yamlContent.appendChild(headerInfo);
+              yamlContent.appendChild(copyBtn);
+              yamlContent.appendChild(pre);
+
+              showPopupWithButtons(yamlContent, [
+                { label:"Edit", onClick:()=>{ input.value = lastGeneratedYAML; autoResize(input); input.focus(); } },
+                { label:"Deploy", onClick: () => { addMessage("🚀 Deploying the generated YAML...", "bot"); deployYAML(); } },
+                { label:"No", onClick: ()=>{ lastGeneratedYAML=""; addMessage("❌ YAML discarded.","bot"); } }
+              ]);
+        } else {
+          const errMsg = data?.error || data?.message || "Something went wrong.";
+          addMessage("❌ " + errMsg,"bot");
+        }
+      } catch(err) {
+        removeTyping();
+        addMessage("❌ Error contacting backend.","bot");
+        console.error(err);
+      }
+    }
+
+    async function deployYAML(){
+
+      if(!lastGeneratedYAML){
+        showPopupWithButtons(
+          "No YAML available to deploy!",
+          [{label:"OK"}]
+        );
+        return;
+      }
+
+      if(!lastStatefulId){
+        showPopupWithButtons(
+          "Missing Stateful ID. Please generate YAML first.",
+          [{label:"OK"}]
+        );
+        return;
+      }
+
+      // Safety fallback
+      if(!lastRegion){
+        lastRegion = "eu-central-1";
+      }
+
+      console.log("🚀 Deploying infrastructure");
+      console.log("🆔 Stateful ID:", lastStatefulId);
+      console.log("🌍 Region:", lastRegion);
+
+      showTyping();
+
+      try{
+
+        const res = await fetch(apiGatewayUrl, {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json"
+          },
+
+          body: JSON.stringify({
+            action: "deploy",
+            yaml: lastGeneratedYAML,
+            stateful_id: lastStatefulId,
+            region: lastRegion,
+            environment: lastEnvironment
+          })
+        });
+
+        let data;
+
+        try{
+          data = await res.json();
+        } catch(e){
+          data = {};
+        }
+
+        removeTyping();
+
+        console.log("📥 Deploy response:", data);
+
+        if(res.ok && data.executionArn){
+
+          addMessage(
+            "🚀 Deployment started successfully.",
+            "bot"
+          );
+
+          addMessage(
+            `🆔 Your Stateful ID: <b>${lastStatefulId}</b>`,
+            "bot"
+          );
+
+          addMessage(
+            `🌍 Deployment Region: <b>${lastRegion}</b>`,
+            "bot"
+          );
+
+          addMessage(
+            `🏢 Deployment Environment: <b>${lastEnvironment}</b>`,
+            "bot"
+          );
+
+        } else {
+
+          const msg =
+            data?.error ||
+            data?.message ||
+            "Deployment failed.";
+
+          addMessage(
+            `❌ ${msg}`,
+            "bot"
+          );
+        }
+
+      }catch(err){
+
+        removeTyping();
+
+        addMessage(
+          "❌ Error during deploy.",
+          "bot"
+        );
+
+        console.error(
+          "❌ Deployment error:",
+          err
+        );
+      }
+    }
+
+    async function fetchStackById(statefulId) {
+      showTyping();
+      try {
+        const res = await fetch(secondApiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ stateful_id: statefulId })
+        });
+        let data;
+        try { data = await res.json(); } catch (e) { data = {}; }
+        removeTyping();
+        if (res.ok && data.stack_details) {
+          addMessage("📋 Stack Details for ID " + statefulId + ":", "bot");
+          addMessage(JSON.stringify(data.stack_details, null, 2), "bot", true);
+        } else {
+          const msg = data?.message || "No stack found for this ID.";
+          addMessage(`❌ ${msg}`, "bot");
+        }
+      } catch (err) {
+        removeTyping();
+        addMessage("❌ Error fetching stack details.", "bot");
+        console.error(err);
+      }
+    }
+
+    function promptFetchStack() {
+      showFetchModal();
+    }
+
+function showFetchModal() {
+
+  const overlay = document.createElement('div');
+  overlay.className = 'popup-overlay';
+
+  const popup = document.createElement('div');
+  popup.className = 'popup fetch-popup';
+
+  const header = document.createElement('div');
+  header.className = 'modal-header';
+
+  const title = document.createElement('div');
+  title.className = 'modal-title';
+  title.textContent = 'Fetch Stack By ID';
+
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'modal-close';
+  closeBtn.innerHTML = '&times;';
+  closeBtn.onclick = () => overlay.remove();
+
+  header.appendChild(title);
+  header.appendChild(closeBtn);
+
+  const desc = document.createElement('div');
+  desc.className = 'modal-desc';
+  desc.textContent = 'Enter Stateful ID to fetch stack details';
+
+  const input = document.createElement('input');
+  input.className = 'modal-input';
+  input.placeholder = 'GENAI-STACK-1';
+  input.type = 'text';
+
+  const actions = document.createElement('div');
+  actions.className = 'modal-actions';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'btn-cancel';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.onclick = () => overlay.remove();
+
+  const fetchBtn = document.createElement('button');
+  fetchBtn.className = 'btn-fetch';
+  fetchBtn.textContent = 'Fetch';
+
+  fetchBtn.onclick = () => {
+
+    const statefulId = input.value.trim();
+
+    if (!statefulId) {
+      showPopupWithButtons(
+        "Please enter a Stateful ID.",
+        [{ label: "OK" }]
+      );
+      return;
+    }
+
+    overlay.remove();
+
+    // EXACT SAME BACKEND LOGIC AS FILE 1
+    fetchStackById(statefulId);
+  };
+
+  actions.appendChild(cancelBtn);
+  actions.appendChild(fetchBtn);
+
+  popup.appendChild(header);
+  popup.appendChild(desc);
+  popup.appendChild(input);
+  popup.appendChild(actions);
+
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
+
+  setTimeout(() => input.focus(), 100);
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      fetchBtn.click();
+    }
+    if (e.key === 'Escape') {
+      overlay.remove();
+    }
+  });
+}
+
+    function saveSessions(){
+      localStorage.setItem("infraBotSessions",JSON.stringify(sessions));
+      localStorage.setItem("infraBotCurrentIndex",currentSessionIndex);
+      localStorage.setItem("infraBotPrompts",JSON.stringify(promptsPerSession));
+    }
+    
+   
+    const DEFAULT_BOT_MESSAGE = {
+      content: "Hi! I'm InfraBot. Describe what AWS infrastructure you'd like.",
+      sender: "bot"
+    };
+    function loadSessions() {
+      const saved = localStorage.getItem("infraBotSessions");
+      const savedIndex = localStorage.getItem("infraBotCurrentIndex");
+      const savedPrompts = localStorage.getItem("infraBotPrompts");
+
+      if (saved) {
+        sessions = JSON.parse(saved);
+        promptsPerSession = savedPrompts ? JSON.parse(savedPrompts) : {};
+        currentSessionIndex = savedIndex !== null ? parseInt(savedIndex) : 0;
+      } else {
+        createSession(); // greeting added automatically
+      }
+    }
+    function createSession(initialMsg = null) {
+      const session = [];
+
+      // Always add InfraBot greeting
+      session.push({ ...DEFAULT_BOT_MESSAGE });
+
+      // Optionally add another initial message
+      if (initialMsg) {
+        session.push(initialMsg);
+      }
+
+      sessions.push(session);
+      currentSessionIndex = sessions.length - 1;
+
+      renderTabs();
+      renderSessionMessages();
+      saveSessions();
+    }
+
+
+    function renderTabs(){
+      const container=document.getElementById("sessionTabs");
+      const header=container.querySelector(".sidebar-header");
+      const fetchBtn=container.querySelector(".fetch-session-btn");
+      const newBtn=container.querySelector(".new-session-btn");
+      container.innerHTML="";
+      container.appendChild(header);
+      container.appendChild(fetchBtn);
+      container.appendChild(newBtn);
+      sessions.forEach((s,i)=>{
+        const tab=document.createElement("div");
+        tab.className="session-tab"+(i===currentSessionIndex?" active":"");
+
+        const content = document.createElement("div");
+        content.className = "session-content";
+
+        const title = document.createElement("div");
+        title.className = "session-title";
+        title.textContent = `Chat ${i+1}`;
+
+        const subtitle = document.createElement("div");
+        subtitle.className = "session-subtitle";
+        // Prefer saved prompt snippet, otherwise show first user message in session
+        let subText = "";
+        if(promptsPerSession && promptsPerSession[i]) subText = promptsPerSession[i];
+        else if(s && s.length>1){
+          const userMsg = s.find(m => m.sender === 'user' && m.content && m.content.trim());
+          subText = userMsg ? userMsg.content : "";
+        }
+        subtitle.textContent = subText ? (subText.length>42? subText.slice(0,40)+"…": subText) : "New infrastructure planning session";
+
+        content.appendChild(title);
+        content.appendChild(subtitle);
+
+        const delBtn = document.createElement("button");
+        delBtn.className = "trash-btn";
+        delBtn.title = "Delete chat";
+        delBtn.innerHTML = "🗑️";
+        delBtn.onclick = function(e){ e.stopPropagation(); deleteSession(e, i); };
+
+        tab.appendChild(content);
+        tab.appendChild(delBtn);
+
+        tab.onclick = ()=>{
+          currentSessionIndex=i;
+          renderTabs();
+          renderSessionMessages();
+          document.getElementById("promptInput").value=promptsPerSession[i]||"";
+          autoResize(document.getElementById("promptInput"));
+          saveSessions();
+        };
+
+        container.appendChild(tab);
+      });
+    }
+
+    function deleteSession(e,index){
+      e.stopPropagation();
+      if(confirm("Delete this chat?")){
+        sessions.splice(index,1);
+        delete promptsPerSession[index];
+        if(currentSessionIndex>=sessions.length) currentSessionIndex=sessions.length-1;
+        renderTabs();
+        renderSessionMessages();
+        saveSessions();
+      }
+    }
+
+    function renderSessionMessages(){
+      const chat=document.getElementById("chat");
+      chat.innerHTML="";
+      if(currentSessionIndex>=0 && sessions[currentSessionIndex]){
+        sessions[currentSessionIndex].forEach(msg=>addMessage(msg.content,msg.sender,msg.isCode,false));
+      }
+    }
+
+    window.addEventListener("load",()=>{
+      loadSessions();
+      renderTabs();
+      renderSessionMessages();
+    });
+
+    document.getElementById("promptInput").addEventListener("input",function(){
+      promptsPerSession[currentSessionIndex]=this.value;
+      saveSessions();
+    });
+    document.getElementById("promptInput").addEventListener("keydown",function(e){
+      if(e.key==="Enter"&&!e.shiftKey){
+        e.preventDefault();
+        sendPrompt();
+      }
+    });
+
+    (function () {
+      const img = new Image();
+      img.src = "https://futransolutions.com/wp-content/uploads/2024/02/How-to-leverage-AWS-cloud-services-for-your-business-needs.jpg";
+
+      img.onload = function () {
+        document.body.style.backgroundImage =
+          'url("https://futransolutions.com/wp-content/uploads/2024/02/How-to-leverage-AWS-cloud-services-for-your-business-needs.jpg")';
+      };
+    })();
+  </script>
+</body>
+</html>
